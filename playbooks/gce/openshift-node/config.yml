@@ -10,26 +10,15 @@
 - name: Gather facts for masters in {{ oo_env }}
   hosts: "tag_env-host-type-{{ oo_env }}-openshift-master"
 
-- name: Set OO sepcific facts on localhost (for later use)
-  hosts: localhost
-  gather_facts: no
-  tasks:
-    - debug: msg="{{ groups['tag_env-host-type-' + oo_env + '-openshift-master'] }}"
-    - name: Setting openshift_master_ips fact on localhost
-      set_fact:
-        openshift_master_ips: "{{ hostvars
-            | oo_select_keys(groups['tag_env-host-type-' + oo_env + '-openshift-master'])
-            | oo_collect(attribute='ansible_default_ipv4.address') }}"
-      when: groups['tag_env-host-type-' + oo_env + '-openshift-master'] is defined
-    - name: Setting openshift_master_public_ips fact on localhost
-      set_fact:
-        openshift_master_public_ips: "{{ hostvars
-            | oo_select_keys(groups['tag_env-host-type-' + oo_env + '-openshift-master'])
-            | oo_collect(attribute='gce_public_ip') }}"
-      when: groups['tag_env-host-type-' + oo_env + '-openshift-master'] is defined
-
 - name: Configure instances
   hosts: oo_hosts_to_config
+  vars:
+    openshift_master_ips: "{{ hostvars
+        | oo_select_keys(groups['tag_env-host-type-' + oo_env + '-openshift-master'])
+        | oo_collect(attribute='ansible_default_ipv4.address') }}"
+    openshift_master_public_ips: "{{ hostvars
+        | oo_select_keys(groups['tag_env-host-type-' + oo_env + '-openshift-master'])
+        | oo_collect(attribute='gce_public_ip') }}"
   vars_files:
   - vars.yml
   roles:
