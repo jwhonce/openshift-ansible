@@ -4,7 +4,7 @@ GCE Setup Instructions
 
 Get a gce service key
 ---------------------
-1. ask your GCE project administrator for a GCE service key
+1. Ask your GCE project administrator for a GCE service key
 
 Note: If your GCE project does not show a Service Account under <Project>/APIs & auth/Credentials, you will need to use "Create new Client ID" to create a Service Account before your administrator can create the service key for you.
 
@@ -72,5 +72,5 @@ Test The Setup
 
 3. Try to create an instance:
 ```
-  ./cloud.rb gce launch -n ${USER}-node1 -e int --type os3-node
+  ./cloud.rb gce launch -e int --type openshift-node
 ```
