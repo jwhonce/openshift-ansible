@@ -38,6 +38,7 @@
     - vars.yml
   roles:
     - repos
+    - docker
     - {
         role: openshift_node,
         openshift_master_ips: "{{ hostvars['localhost'].openshift_master_ips | default(['']) }}",
@@ -46,4 +47,3 @@
         openshift_public_ip: "{{ ec2_ip_address }}"
       }
     - os_env_extras
-    - os_env_extras_node
