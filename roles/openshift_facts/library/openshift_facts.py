@@ -288,6 +288,54 @@ def normalize_provider_facts(provider, metadata):
         facts = normalize_openstack_facts(metadata, facts)
     return facts
 
+def set_registry_url_if_unset(facts):
+    """ Set registry_url fact if not already present in facts dict
+
+        Args:
+            facts (dict): existing facts
+        Returns:
+            dict: the facts dict updated with the generated identity providers
+            facts if they were not already present
+    """
+    for role in ('master', 'node'):
+        if role in facts:
+            deployment_type = facts['common']['deployment_type']
+            if 'registry_url' not in facts[role]:
+                registry_url = "openshift/origin-${component}:${version}"
+                if deployment_type == 'enterprise':
+                    registry_url = "openshift3_beta/ose-${component}:${version}"
+                elif deployment_type == 'online':
+                    registry_url = ("docker-registry.ops.rhcloud.com/"
+                                    "openshift3_beta/ose-${component}:${version}")
+                facts[role]['registry_url'] = registry_url
+
+    return facts
+
+def set_identity_providers_if_unset(facts):
+    """ Set identity_providers fact if not already present in facts dict
+
+        Args:
+            facts (dict): existing facts
+        Returns:
+            dict: the facts dict updated with the generated identity providers
+            facts if they were not already present
+    """
+    if 'master' in facts:
+        deployment_type = facts['common']['deployment_type']
+        if 'identity_providers' not in facts['master']:
+            identity_provider = dict(
+                name='allow_all', challenge=True, login=True,
+                kind='AllowAllPasswordIdentityProvider'
+            )
+            if deployment_type == 'enterprise':
+                identity_provider = dict(
+                    name='deny_all', challenge=True, login=True,
+                    kind='DenyAllPasswordIdentityProvider'
+                )
+
+            facts['master']['identity_providers'] = [identity_provider]
+
+    return facts
 
 def set_url_facts_if_unset(facts):
     """ Set url facts if not already present in facts dict
@@ -299,34 +347,44 @@ def set_url_facts_if_unset(facts):
                   were not already present
     """
     if 'master' in facts:
-        for (url_var, use_ssl, port, default) in [
-                ('api_url',
-                 facts['master']['api_use_ssl'],
-                 facts['master']['api_port'],
-                 facts['common']['hostname']),
-                ('public_api_url',
-                 facts['master']['api_use_ssl'],
-                 facts['master']['api_port'],
-                 facts['common']['public_hostname']),
-                ('console_url',
-                 facts['master']['console_use_ssl'],
-                 facts['master']['console_port'],
-                 facts['common']['hostname']),
-                ('public_console_url' 'console_use_ssl',
-                 facts['master']['console_use_ssl'],
-                 facts['master']['console_port'],
-                 facts['common']['public_hostname'])]:
-            if url_var not in facts['master']:
-                scheme = 'https' if use_ssl else 'http'
-                netloc = default
-                if ((scheme == 'https' and port != '443')
-                        or (scheme == 'http' and port != '80')):
-                    netloc = "%s:%s" % (netloc, port)
-                facts['master'][url_var] = urlparse.urlunparse(
-                    (scheme, netloc, '', '', '', '')
-                )
+        api_use_ssl = facts['master']['api_use_ssl']
+        api_port = facts['master']['api_port']
+        console_use_ssl = facts['master']['console_use_ssl']
+        console_port = facts['master']['console_port']
+        console_path = facts['master']['console_path']
+        etcd_use_ssl = facts['master']['etcd_use_ssl']
+        etcd_port = facts['master']['etcd_port'],
+        hostname = facts['common']['hostname']
+        public_hostname = facts['common']['public_hostname']
+
+        if 'etcd_urls' not in facts['master']:
+            facts['master']['etcd_urls'] = [format_url(etcd_use_ssl, hostname,
+                                                       etcd_port)]
+        if 'api_url' not in facts['master']:
+            facts['master']['api_url'] = format_url(api_use_ssl, hostname,
+                                                    api_port)
+        if 'public_api_url' not in facts['master']:
+            facts['master']['public_api_url'] = format_url(api_use_ssl,
+                                                           public_hostname,
+                                                           api_port)
+        if 'console_url' not in facts['master']:
+            facts['master']['console_url'] = format_url(console_use_ssl,
+                                                        hostname,
+                                                        console_port,
+                                                        console_path)
+        if 'public_console_url' not in facts['master']:
+            facts['master']['public_console_url'] = format_url(console_use_ssl,
+                                                               public_hostname,
+                                                               console_port,
+                                                               console_path)
     return facts
 
+def format_url(use_ssl, hostname, port, path=''):
+    scheme = 'https' if use_ssl else 'http'
+    netloc = hostname
+    if (use_ssl and port != '443') or (not use_ssl and port != '80'):
+        netloc += ":%s" % port
+    return urlparse.urlunparse((scheme, netloc, path, '', '', ''))
 
 def get_current_config(facts):
     """ Get current openshift config
@@ -560,6 +618,8 @@ class OpenShiftFacts(object):
         facts = merge_facts(facts, local_facts)
         facts['current_config'] = get_current_config(facts)
         facts = set_url_facts_if_unset(facts)
+        facts = set_identity_providers_if_unset(facts)
+        facts = set_registry_url_if_unset(facts)
         return dict(openshift=facts)
 
     def get_defaults(self, roles):
@@ -573,26 +633,30 @@ class OpenShiftFacts(object):
         """
         defaults = dict()
 
-        common = dict(use_openshift_sdn=True)
         ip_addr = self.system_facts['default_ipv4']['address']
-        common['ip'] = ip_addr
-        common['public_ip'] = ip_addr
-
         exit_code, output, _ = module.run_command(['hostname', '-f'])
         hostname_f = output.strip() if exit_code == 0 else ''
         hostname_values = [hostname_f, self.system_facts['nodename'],
                            self.system_facts['fqdn']]
         hostname = choose_hostname(hostname_values)
 
-        common['hostname'] = hostname
-        common['public_hostname'] = hostname
+        common = dict(use_openshift_sdn=True, ip=ip_addr, public_ip=ip_addr,
+                      deployment_type='origin', hostname=hostname,
+                      public_hostname=hostname)
         defaults['common'] = common
 
         if 'master' in roles:
             master = dict(api_use_ssl=True, api_port='8443',
                           console_use_ssl=True, console_path='/console',
-                          console_port='8443', etcd_use_ssl=False,
-                          etcd_port='4001', portal_net='172.30.17.0/24')
+                          console_port='8443', etcd_use_ssl=True,
+                          etcd_port='4001', portal_net='172.30.0.0/16',
+                          embedded_etcd=True, embedded_kube=True,
+                          embedded_dns=True, dns_port='53',
+                          bind_addr='0.0.0.0', session_max_seconds=3600,
+                          session_name='ssn', session_secrets_file='',
+                          access_token_max_seconds=86400,
+                          auth_token_max_seconds=500,
+                          oauth_grant_method='auto')
             defaults['master'] = master
 
         if 'node' in roles:

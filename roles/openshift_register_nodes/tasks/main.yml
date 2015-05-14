@@ -35,7 +35,7 @@
       --certificate-authority={{ openshift_master_ca_cert }}
       --signer-serial={{ openshift_master_ca_serial }}
       --node-client-certificate-authority={{ openshift_master_ca_cert }}
-      {{ ('--images=' ~ openshift_registry_url) if openshift_registry_url is defined else '' }}
+      --images={{ item.openshift.node.registry_url }}
       --listen=https://0.0.0.0:10250
       --volume-dir={{ openshift_data_dir }}/openshift.local.volumes
   args:

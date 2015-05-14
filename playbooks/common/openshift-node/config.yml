@@ -13,17 +13,18 @@
     with_items:
       - role: common
         local_facts:
-          hostname: "{{ openshift_hostname | default(None) }}"
-          public_hostname: "{{ openshift_public_hostname | default(None) }}"
+          hostname: "{{ openshift_hostname | default(none) }}"
+          public_hostname: "{{ openshift_public_hostname | default(none) }}"
           deployment_type: "{{ openshift_deployment_type }}"
       - role: node
         local_facts:
-          external_id: "{{ openshift_node_external_id | default(None) }}"
-          resources_cpu: "{{ openshift_node_resources_cpu | default(None) }}"
-          resources_memory: "{{ openshift_node_resources_memory | default(None) }}"
-          pod_cidr: "{{ openshift_node_pod_cidr | default(None) }}"
-          labels: "{{ openshift_node_labels | default(None) }}"
-          annotations: "{{ openshift_node_annotations | default(None) }}"
+          external_id: "{{ openshift_node_external_id | default(none) }}"
+          resources_cpu: "{{ openshift_node_resources_cpu | default(none) }}"
+          resources_memory: "{{ openshift_node_resources_memory | default(none) }}"
+          pod_cidr: "{{ openshift_node_pod_cidr | default(none) }}"
+          labels: "{{ openshift_node_labels | default(none) }}"
+          annotations: "{{ openshift_node_annotations | default(none) }}"
+          registry_url: "{{ openshift_registry_url | default(none) }}"
 
 
 - name: Create temp directory for syncing certs
