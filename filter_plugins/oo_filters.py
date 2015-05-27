@@ -203,6 +203,26 @@ class FilterModule(object):
             return [root_vol, docker_vol]
         return [root_vol]
 
+    @staticmethod
+    def oo_filter_list(data, filter_attr=None):
+        ''' This returns a list, which contains all items where filter_attr
+            evaluates to true
+            Ex: data = [ { a: 1, b: True },
+                         { a: 3, b: False },
+                         { a: 5, b: True } ]
+                filter_attr = 'b'
+                returns [ { a: 1, b: True },
+                          { a: 5, b: True } ]
+        '''
+        if not issubclass(type(data), list):
+            raise errors.AnsibleFilterError("|failed expects to filter on a list")
+
+        if not issubclass(type(filter_attr), str):
+            raise errors.AnsibleFilterError("|failed expects filter_attr is a str")
+
+        # Gather up the values for the list of keys passed in
+        return [x for x in data if x[filter_attr]]
+
     def filters(self):
         ''' returns a mapping of filters to methods '''
         return {
@@ -215,4 +235,5 @@ class FilterModule(object):
             "oo_ami_selector": self.oo_ami_selector,
             "oo_ec2_volume_definition": self.oo_ec2_volume_definition,
             "oo_combine_key_value": self.oo_combine_key_value,
+            "oo_filter_list": oo_filter_list
         }

@@ -36,50 +36,11 @@
   when: (node_install_result | changed or (openshift.common.use_openshift_sdn
           and sdn_install_result | changed))
 
-- name: Create config parent directory if it doesn't exist
-  file:
-    path: "{{ openshift_node_config_dir }}"
-    state: directory
-
-- name: Check status of node certificates
-  stat:
-    path: "{{ item }}"
-  with_items:
-  - "{{ openshift_node_config_dir }}/node.crt"
-  - "{{ openshift_node_config_dir }}/node.key"
-  - "{{ openshift_node_config_dir }}/node.kubeconfig"
-  - "{{ openshift_node_config_dir }}/ca.crt"
-  - "{{ openshift_node_config_dir }}/server.crt"
-  - "{{ openshift_node_config_dir }}/server.key"
-  register: stat_result
-
-- set_fact: certs_missing={{ stat_result.results | map(attribute='stat.exists') | list | intersect([false])}}
-
-- include: generate_node_certs.yml
-  when: certs_missing
-
 # TODO: add the validate parameter when there is a validation command to run
 - name: Create the Node config
   template:
     dest: "{{ openshift_node_config_file }}"
     src: node.yaml.v1.j2
-  notify:
-  - restart openshift-node
-
-- name: Register unregistered nodes
-  delegate_to: "{{ openshift_first_master }}"
-  kubernetes_register_node:
-    kubectl_cmd: ['osc']
-    default_client_config: '~/.config/openshift/.config'
-    name: "{{ openshift.common.hostname }}"
-    api_version: "{{ openshift_kube_api_version }}"
-    cpu: "{{ openshift.node.resources_cpu | default(None) }}"
-    memory: "{{ openshift.node.resources_memory | default(None) }}"
-    pod_cidr: "{{ openshift.node.pod_cidr | default(None) }}"
-    host_ip: "{{ openshift.common.ip }}"
-    labels: "{{ openshift.node.labels | default({}) }}"
-    annotations: "{{ openshift.node.annotations | default({}) }}"
-    external_id: "{{ openshift.node.external_id }}"
   notify:
   - restart openshift-node
 
@@ -97,6 +58,4 @@
   - restart openshift-node
 
 - name: Enable openshift-node
-  service: name=openshift-node enabled=yes
-  notify:
-  - restart openshift-node
+  service: name=openshift-node enabled=yes state=started

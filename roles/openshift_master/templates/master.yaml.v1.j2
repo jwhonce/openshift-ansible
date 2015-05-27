@@ -73,23 +73,26 @@ masterClients:
 masterPublicURL: {{ openshift.master.public_api_url }}
 {% if openshift.common.use_openshift_sdn %}
 networkConfig:
-{# TODO: allow overriding sdn configuration #}
-  clusterNetworkCIDR: 10.1.0.0/16
-  hostSubnetLength: 8
-  networkPluginName: "redhat/openshift-ovs-subnet"
+  clusterNetworkCIDR: {{ openshift.master.sdn_cluster_network_cidr }}
+  hostSubnetLength: {{ openshift.master.sdn_host_subnet_length }}
+  networkPluginName: {{ openshift.common.sdn_network_plugin_name }}
 {% endif %}
 {% include 'v1_partials/oauthConfig.j2' %}
 policyConfig:
   bootstrapPolicyFile: {{ openshift_master_policy }}
   openshiftSharedResourcesNamespace: openshift
-{# TODO: Allow users to override projectNodeSelector #}
-projectNodeSelector: ""
-{% if False %}
-{# TODO: Allow users to override projectRequestConfig and set sane values #}
-projectRequestConfig:
+{# TODO: Allow users to override projectConfig items #}
+projectConfig:
+  defaultNodeSelector: ""
   projectRequestMessage: ""
   projectRequestTemplate: ""
-{% endif %}
+serviceAccountConfig:
+  managedNames:
+  - default
+  - builder
+  privateKeyFile: serviceaccounts.private.key
+  publicKeyFiles:
+  - serviceaccounts.public.key
 servingInfo:
   bindAddress: {{ openshift.master.bind_addr }}:{{ openshift.master.api_port }}
   certFile: master.server.crt

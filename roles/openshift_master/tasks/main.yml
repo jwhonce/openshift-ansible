@@ -39,6 +39,8 @@
       identity_providers: "{{ openshift_master_identity_providers | default(None) }}"
       registry_url: "{{ openshift_registry_url | default(None) }}"
       oauth_grant_method: "{{ openshift_master_oauth_grant_method | default(None) }}"
+      sdn_cluster_network_cidr: "{{ osm_cluster_network_cidr | default(None) }}"
+      sdn_host_subnet_length: "{{ osm_host_subnet_length | default(None) }}"
 
 # TODO: These values need to be configurable
 - name: Set dns OpenShift facts
@@ -46,7 +48,7 @@
     role: dns
     local_facts:
       ip: "{{ openshift.common.ip }}"
-      domain: local
+      domain: cluster.local
   when: openshift.master.embedded_dns
 
 - name: Install OpenShift Master package
@@ -62,9 +64,10 @@
     path: "{{ openshift_master_config_dir }}"
     state: directory
 
-# TODO: include a changed_when
 - name: Create the master certificates if they do not already exist
   command: osadm create-master-certs --hostnames={{ openshift.common.hostname }},{{ openshift.common.public_hostname }} --master={{ openshift.master.api_url }} --public-master={{ openshift.master.public_api_url }} --cert-dir={{ openshift_master_config_dir }} --overwrite=false
+  args:
+    creates: "{{ openshift_master_config_dir }}/master.server.key"
 
 - name: Create the policy file if it does not already exist
   command: osadm create-bootstrap-policy-file --filename={{ openshift_master_policy }}
@@ -89,7 +92,6 @@
   when: item.kind == 'HTPasswdPasswordIdentityProvider'
   with_items: openshift.master.identity_providers
 
-# TODO: Need to add volumes path configuration to template
 # TODO: add the validate parameter when there is a validation command to run
 - name: Create master config
   template:

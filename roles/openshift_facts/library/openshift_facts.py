@@ -379,6 +379,21 @@ def set_url_facts_if_unset(facts):
                                                                console_path)
     return facts
 
+def set_sdn_facts_if_unset(facts):
+    if 'common' in facts:
+        if 'sdn_network_plugin_name' not in facts['common']:
+            use_sdn = facts['common']['use_openshift_sdn']
+            plugin = 'redhat/openshift-ovs-subnet' if use_sdn else ''
+            facts['common']['sdn_network_plugin_name'] = plugin
+
+    if 'master' in facts:
+        if 'sdn_cluster_network_cidr' not in facts['master']:
+            facts['master']['sdn_cluster_network_cidr'] = '10.1.0.0/16'
+        if 'sdn_host_subnet_length' not in facts['master']:
+            facts['master']['sdn_host_subnet_length'] = '8'
+
+    return facts
+
 def format_url(use_ssl, hostname, port, path=''):
     scheme = 'https' if use_ssl else 'http'
     netloc = hostname
@@ -620,6 +635,7 @@ class OpenShiftFacts(object):
         facts = set_url_facts_if_unset(facts)
         facts = set_identity_providers_if_unset(facts)
         facts = set_registry_url_if_unset(facts)
+        facts = set_sdn_facts_if_unset(facts)
         return dict(openshift=facts)
 
     def get_defaults(self, roles):
