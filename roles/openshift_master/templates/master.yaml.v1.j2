@@ -71,12 +71,10 @@ masterClients:
   externalKubernetesKubeConfig: ""
   openshiftLoopbackKubeConfig: openshift-client.kubeconfig
 masterPublicURL: {{ openshift.master.public_api_url }}
-{% if openshift.common.use_openshift_sdn %}
 networkConfig:
   clusterNetworkCIDR: {{ openshift.master.sdn_cluster_network_cidr }}
   hostSubnetLength: {{ openshift.master.sdn_host_subnet_length }}
   networkPluginName: {{ openshift.common.sdn_network_plugin_name }}
-{% endif %}
 {% include 'v1_partials/oauthConfig.j2' %}
 policyConfig:
   bootstrapPolicyFile: {{ openshift_master_policy }}

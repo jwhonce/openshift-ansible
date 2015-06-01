@@ -7,9 +7,7 @@ imageConfig:
   latest: false
 kind: NodeConfig
 masterKubeConfig: node.kubeconfig
-{% if openshift.common.use_openshift_sdn %}
 networkPluginName: {{ openshift.common.sdn_network_plugin_name }}
-{% endif %}
 nodeName: {{ openshift.common.hostname }}
 podManifestConfig: null
 servingInfo:
