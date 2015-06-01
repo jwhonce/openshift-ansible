@@ -235,5 +235,5 @@ class FilterModule(object):
             "oo_ami_selector": self.oo_ami_selector,
             "oo_ec2_volume_definition": self.oo_ec2_volume_definition,
             "oo_combine_key_value": self.oo_combine_key_value,
-            "oo_filter_list": oo_filter_list
+            "oo_filter_list": self.oo_filter_list
         }
