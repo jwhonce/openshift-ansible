@@ -1,5 +1,5 @@
-OpenShift Node Certificates
-===========================
+OpenShift Register Nodes
+========================
 
 TODO
 
