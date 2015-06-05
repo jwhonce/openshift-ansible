@@ -337,7 +337,7 @@ class Node(object):
         if self.node['apiVersion'] == 'v1beta1':
             return self.node['id']
         elif self.node['apiVersion'] == 'v1beta3':
-            return self.node['name']
+            return self.node['metadata']['name']
 
     def get_node(self):
         """ Get the dict representing the node
@@ -488,9 +488,9 @@ def main():
 
     node = Node(module, client_opts, module.params['api_version'],
                 module.params['name'], module.params['host_ip'],
-                module.params['cpu'], module.params['external_id'],
-                module.params['memory'], labels,
-                module.params['annotations'], module.params['pod_cidr'])
+                module.params['cpu'],  module.params['memory'],
+                labels, module.params['annotations'], module.params['pod_cidr'],
+                module.params['external_id'])
 
     # TODO: attempt to support changing node settings where possible and/or
     # modifying node resources

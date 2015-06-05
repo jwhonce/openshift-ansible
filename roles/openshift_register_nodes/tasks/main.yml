@@ -48,4 +48,3 @@
     external_id: "{{ item.openshift.node.external_id }}"
   with_items: openshift_nodes
   register: register_result
-
